@@ -1,8 +1,7 @@
+import http.HttpRequest
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.IOException
-import java.io.InputStreamReader
 import java.net.Socket
 
 
@@ -11,27 +10,28 @@ class RequestHandler(
 ) : Thread() {
 
     private val logger = LoggerFactory.getLogger(RequestHandler::class.java)
+    private val headers = mutableMapOf<String, String>()
+    lateinit var method: String
+    lateinit var path: String
+    lateinit var httpVersion: String
 
     override fun run() {
         logger.debug("new request is created!! ${socket.inetAddress} : ${socket.port}")
         try {
             val inStream = socket.getInputStream()
             val outStream = socket.getOutputStream()
-
-            val buffer = BufferedReader(InputStreamReader(inStream, "UTF-8"))
-            var line = buffer.readLine()
-            while (!line.isNullOrBlank()) {
-                line = buffer.readLine()
-                logger.debug("$line")
+            try {
+                val request = HttpRequest(inStream)
+            } catch (error: Exception) {
+                error.printStackTrace()
+                logger.error("request is failed ${error.message}")
             }
-            val dos = DataOutputStream(outStream)
-            val body = "Hello World".toByteArray()
-            response200Header(dos, body.size)
-            responseBody(dos, body)
-        }catch (e : RuntimeException) {
+
+        } catch (e: RuntimeException) {
             logger.error("request is failed")
         }
     }
+
     private fun response200Header(dos: DataOutputStream, lengthOfBodyContent: Int) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n")
