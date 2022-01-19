@@ -10,25 +10,23 @@ class RequestHandler(
 ) : Thread() {
 
     private val logger = LoggerFactory.getLogger(RequestHandler::class.java)
-    private val headers = mutableMapOf<String, String>()
-    lateinit var method: String
-    lateinit var path: String
-    lateinit var httpVersion: String
 
     override fun run() {
-        logger.debug("new request is created!! ${socket.inetAddress} : ${socket.port}")
+        logger.debug("request arrived from ${socket.inetAddress} : ${socket.port}")
         try {
             val inStream = socket.getInputStream()
             val outStream = socket.getOutputStream()
             try {
-                val request = HttpRequest(inStream)
+                val request = HttpRequest(inStream, outStream)
+                router[request.path.split("?")[0]]?.invoke(request)
             } catch (error: Exception) {
                 error.printStackTrace()
-                logger.error("request is failed ${error.message}")
+                logger.error("request initialize fail:  ${error.message}")
             }
 
         } catch (e: RuntimeException) {
-            logger.error("request is failed")
+            e.printStackTrace()
+            logger.error("request handle failed: ${e.message}")
         }
     }
 
