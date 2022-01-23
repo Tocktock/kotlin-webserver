@@ -1,34 +1,39 @@
-import handler.GetTestHandler
-import handler.HelloHandler
-import handler.PostTestHandler
+import auth.CheckCookieHandler
+import auth.SignInHandler
 import http.HttpRequest
+import http.ResultDTO
 import org.slf4j.LoggerFactory
+import session.SessionManager
+import tutorial.HelloHandler
+import tutorial.ReadJsonHandler
+import tutorial.ReadQueryString
 import java.net.ServerSocket
-import java.net.Socket
 
 
-internal val router = mutableMapOf<String, (HttpRequest) -> Unit>()
+internal val router = mutableMapOf<String, (HttpRequest) -> ResultDTO>()
+val sessionManager = SessionManager()
 
 class Application
 
 fun main(args: Array<String>) {
-    val hello = HelloHandler()
-    val postHandler = PostTestHandler()
-    val getHandler = GetTestHandler()
-    router["hello"] = { HttpRequest -> hello.handle(HttpRequest) }
-    router["post-test"] = { HttpRequest -> postHandler.handle(HttpRequest) }
-    router["get-test"] = { HttpRequest -> getHandler.handle(HttpRequest) }
 
+    val port = 8080
     val logger = LoggerFactory.getLogger(Application::class.java)
+    registerRouter()
 
-    ServerSocket(8080).use { listenSocket ->
-        logger.info("Web server started.")
-        router.map { logger.info("/${it.key} is mapped") }
-        // 클라이언트가 연결될때까지 대기한다.
-        var connection: Socket?
-        while (listenSocket.accept().also { connection = it } != null) {
-            val requestHandler = RequestHandler(connection!!)
-            requestHandler.start()
+    ServerSocket(port).use { listenSocket ->
+        logger.info("Web server started. port : $port")
+        router.map { logger.info("${it.key} is mapped") }
+
+        while (true) {
+            listenSocket.accept()?.let {
+                RequestHandler(socket = it).start()
+            }
         }
     }
+}
+
+private fun registerRouter() {
+    val handlers = listOf(HelloHandler(), ReadJsonHandler(), ReadQueryString(), SignInHandler(), CheckCookieHandler())
+    handlers.map { router[it.url] = { HttpRequest -> it.handle(HttpRequest) } }
 }

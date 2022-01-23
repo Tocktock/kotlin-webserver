@@ -1,0 +1,4 @@
+package posts
+
+class CreatePostHandler {
+}

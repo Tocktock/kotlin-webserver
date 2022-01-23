@@ -1,4 +1,6 @@
+import com.fasterxml.jackson.databind.ObjectMapper
 import http.HttpRequest
+import http.ResultDTO
 import org.slf4j.LoggerFactory
 import java.io.DataOutputStream
 import java.io.IOException
@@ -10,31 +12,39 @@ class RequestHandler(
 ) : Thread() {
 
     private val logger = LoggerFactory.getLogger(RequestHandler::class.java)
+    private val mapper = ObjectMapper()
 
     override fun run() {
         logger.debug("request arrived from ${socket.inetAddress} : ${socket.port}")
+        val inStream = socket.getInputStream()
+        val outStream = socket.getOutputStream()
+        val request = HttpRequest(inStream, outStream)
         try {
-            val inStream = socket.getInputStream()
-            val outStream = socket.getOutputStream()
-            try {
-                val request = HttpRequest(inStream, outStream)
-                router[request.path.split("?")[0]]?.invoke(request)
-            } catch (error: Exception) {
-                error.printStackTrace()
-                logger.error("request initialize fail:  ${error.message}")
+            router[request.path.split("?")[0]]?.invoke(request).let {
+                val dos = DataOutputStream(outStream)
+                response200Header(dos, request.headers.getAll())
+                val data = mapper.writeValueAsBytes(it)
+                responseBody(dos, data)
             }
-
-        } catch (e: RuntimeException) {
-            e.printStackTrace()
-            logger.error("request handle failed: ${e.message}")
+        } catch (error: RuntimeException) {
+            error.printStackTrace()
+            logger.error("request fail:  ${error.message}")
+            response200Header(DataOutputStream(outStream), request.headers.getAll())
+            responseBody(
+                DataOutputStream(outStream), mapper.writeValueAsBytes(
+                    ResultDTO(false, error.message)
+                )
+            )
         }
+
     }
 
-    private fun response200Header(dos: DataOutputStream, lengthOfBodyContent: Int) {
+    private fun response200Header(dos: DataOutputStream, headers: Map<String, String>) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n")
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n")
-            dos.writeBytes("Content-Length: $lengthOfBodyContent\r\n")
+            headers.forEach { (key, value) ->
+                dos.writeBytes("$key: $value")
+            }
             dos.writeBytes("\r\n")
         } catch (e: IOException) {
             logger.error(e.message)
@@ -43,11 +53,12 @@ class RequestHandler(
 
     private fun responseBody(dos: DataOutputStream, body: ByteArray) {
         try {
+            dos.writeBytes("Content-Type: application/json;charset=utf-8\r\n")
+            dos.writeBytes("Content-Length: ${body.size}\r\n")
             dos.write(body, 0, body.size)
             dos.flush()
         } catch (e: IOException) {
             logger.error(e.message)
         }
     }
-
 }
