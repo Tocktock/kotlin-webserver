@@ -2,7 +2,10 @@ package http
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
-import java.io.*
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.OutputStream
 
 
 data class HttpRequest(
@@ -61,16 +64,16 @@ data class HttpRequest(
         return mapper.readValue(String(bodyString), type)
     }
 
-    fun setCookieTest(sessionId: String) {
-        val resultDTO = mapper.writeValueAsBytes(ResultDTO(result = true, data = "성공"))
-        val dataOutputStream = DataOutputStream(outputStream)
-        dataOutputStream.writeBytes("HTTP/1.1 200 OK \r\n")
-        dataOutputStream.writeBytes("Set-Cookie: sessionId=$sessionId; Path=/; Max-Age=120; \r\n")
-        dataOutputStream.writeBytes("Content-Type: application/json;charset=utf-8\r\n")
-        dataOutputStream.writeBytes("Content-Length: ${resultDTO.size}\r\n")
-        dataOutputStream.writeBytes("\r\n")
-        dataOutputStream.write(resultDTO, 0, resultDTO.size)
-    }
+//    fun setCookieTest(sessionId: String) {
+//        val resultDTO = mapper.writeValueAsBytes(ResultDTO(result = true, data = "성공"))
+//        val dataOutputStream = DataOutputStream(outputStream)
+//        dataOutputStream.writeBytes("HTTP/1.1 200 OK \r\n")
+//        dataOutputStream.writeBytes("Set-Cookie: sessionId=$sessionId; Path=/; Max-Age=120; \r\n")
+//        dataOutputStream.writeBytes("Content-Type: application/json;charset=utf-8\r\n")
+//        dataOutputStream.writeBytes("Content-Length: ${resultDTO.size}\r\n")
+//        dataOutputStream.writeBytes("\r\n")
+//        dataOutputStream.write(resultDTO, 0, resultDTO.size)
+//    }
 }
 
 data class ResultDTO(
