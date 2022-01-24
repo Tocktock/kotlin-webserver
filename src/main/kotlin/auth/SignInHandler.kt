@@ -12,8 +12,7 @@ class SignInHandler : AbstractHandler {
         val dto = req.readJsonBody(SignInDTO::class.java)
         if (dto.id == "test@test.com" && dto.password == "testPassword") {
             val sessionId = sessionManager.createNewSession("test@test.com")
-            req.responseHeader.set("Set-Cookie", "sessionId=$sessionId;Path=/;Max-Age=120;")
-//            req.setCookieTest(sessionId)
+            req.responseHeader.set("Set-Cookie", "sessionId=$sessionId;Path=/;Max-Age=300;")
             return ResultDTO(true, sessionId)
         }
         return ResultDTO(false, "아이디와 비밀번호를 다시 확인해주세요.")

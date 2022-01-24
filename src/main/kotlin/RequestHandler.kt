@@ -22,15 +22,13 @@ class RequestHandler(
             router[request.path.split("?")[0]]?.invoke(request).let {
                 val dos = DataOutputStream(outStream)
                 response200Header(dos, request.responseHeader.getAll())
-                val data = mapper.writeValueAsBytes(it)
-                responseBody(dos, data)
+                responseBody(dos, mapper.writeValueAsBytes(it))
                 dos.close()
             }
         } catch (error: RuntimeException) {
             error.printStackTrace()
             logger.error("request fail:  ${error.message}")
         }
-
     }
 
     private fun response200Header(dos: DataOutputStream, headers: Map<String, String>) {

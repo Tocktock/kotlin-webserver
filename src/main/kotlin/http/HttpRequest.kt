@@ -15,7 +15,7 @@ data class HttpRequest(
     var path = ""
     private val logger = LoggerFactory.getLogger(this.javaClass)
     private val mapper = ObjectMapper()
-    val headers = HttpHeader()
+    val requestHeader = HttpHeader()
     val responseHeader = HttpHeader()
     private var method = ""
     private var httpVersion = ""
@@ -44,7 +44,7 @@ data class HttpRequest(
                 logger.debug(line)
                 val headerInfo = line.split(": ")
                 check(headerInfo.size == 2) { "Header Error: header: content 형식으로 요청해주세요." }
-                headers.set(headerInfo[0], headerInfo[1])
+                requestHeader.set(headerInfo[0], headerInfo[1])
                 line = bufferReader.readLine()
             }
         }
@@ -56,24 +56,13 @@ data class HttpRequest(
 
     fun <T> readJsonBody(type: Class<T>): T {
         logger.debug("reading data")
-        check(headers.get("Content-Type") != null) { "Header Error : Content-Type field is empty" }
-        checkNotNull(headers.get("Content-Length")) { "Header Error : Content-Length field is empty" }
-        check(headers.get("Content-Type") == "application/json") { "Header Error : Content-Type is not application/json" }
-        val bodyString = CharArray(headers.get("Content-Length")!!.toInt())
-        bufferReader.read(bodyString, 0, headers.get("Content-Length")!!.toInt())
+        check(requestHeader.get("Content-Type") != null) { "Header Error : Content-Type field is empty" }
+        checkNotNull(requestHeader.get("Content-Length")) { "Header Error : Content-Length field is empty" }
+        check(requestHeader.get("Content-Type") == "application/json") { "Header Error : Content-Type is not application/json" }
+        val bodyString = CharArray(requestHeader.get("Content-Length")!!.toInt())
+        bufferReader.read(bodyString, 0, requestHeader.get("Content-Length")!!.toInt())
         return mapper.readValue(String(bodyString), type)
     }
-
-//    fun setCookieTest(sessionId: String) {
-//        val resultDTO = mapper.writeValueAsBytes(ResultDTO(result = true, data = "성공"))
-//        val dataOutputStream = DataOutputStream(outputStream)
-//        dataOutputStream.writeBytes("HTTP/1.1 200 OK \r\n")
-//        dataOutputStream.writeBytes("Set-Cookie: sessionId=$sessionId; Path=/; Max-Age=120; \r\n")
-//        dataOutputStream.writeBytes("Content-Type: application/json;charset=utf-8\r\n")
-//        dataOutputStream.writeBytes("Content-Length: ${resultDTO.size}\r\n")
-//        dataOutputStream.writeBytes("\r\n")
-//        dataOutputStream.write(resultDTO, 0, resultDTO.size)
-//    }
 }
 
 data class ResultDTO(
